@@ -7,6 +7,7 @@ from constant import CONFIG_PATH
 class Config:
     def __init__(self):
         config_file_path = os.path.join(os.path.dirname(__file__), CONFIG_PATH)
+        print(config_file_path)
         self.conf = configparser.ConfigParser()
         self.conf.read(config_file_path, encoding="utf-8")
 
@@ -37,3 +38,4 @@ class Config:
 
 
 config = Config()
+print(config.PG_PORT)
