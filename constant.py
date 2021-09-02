@@ -1,40 +1,38 @@
-CONFIG_PATH = 'config.ini'
+CONFIG_PATH = "config.ini"
 
-OUTLIER_FACTOR = 3
-RANDOM_SEED = 42
-SIMPLE_MODEL_FEATURE_LIST = ['community_id', 'city_id', 'district_id', 'area_id', 'total_area', 'plot_ratio', 'landscaping_ratio', 'total_household_num', 'photo_num', 'video_num', 'sale_num', 'rent_num', 'overall_score', 'shopping_score', 'traffic_score', 'impression_score', 'building_type', 'real_estate_type', 'completion_year', 'community_type', 'market_sentiment', 'price']
-ID_COLUMN = 'community_id'
-TARGET_COL = 'price'
+# sql
+select_file_content_sql = '''
+SELECT * FROM file_content where file_type='RESIDENTIAL_UNIT';
+'''
 
-ENCODER_PATH = 'models/onehot_encoder.pkl'
-ENCODING_COL_LIST = ["building_type", "market_sentiment", "community_type"]
+create_necessary_table_sql = '''
+create extension if not exists postgis;
+create table if not exists plan_graph_dim(
+    id int,
+    plan_graph_area float,
+    plan_graph_name text,
+    plan_graph_lw jsonb,
+    bedroom_dim_list jsonb,
+    livingroom_xy jsonb,
+    livingroom_lw jsonb,
+    entrance_xy jsonb
+);
 
-PARAM_XGB_1 = {'algorithm': 'xgb',
-               'algorithm_params': {'learning_rate': 0.02,
-                                    'n_estimators': 200,
-                                    'max_depth': 4,
-                                    'min_child_weight': 2,
-                                    'gamma': 0.9,
-                                    'subsample': 0.8,
-                                    'colsample_bytree': 0.8,
-                                    'objective': 'reg:squarederror'}}
+'''
 
-PARAM_XGB_2 = {'algorithm': 'xgb',
-               'algorithm_params': {'learning_rate': 0.05,
-                                    'n_estimators': 20,
-                                    'max_depth': 6,
-                                    'min_child_weight': 2,
-                                    'gamma': 0.9,
-                                    'subsample': 0.8,
-                                    'colsample_bytree': 0.8,
-                                    'objective': 'reg:squarederror'}}
+insert_floor_graph_dim_sql = '''
+    insert into train_data (id,plan_graph_lw,plan_graph_area,plan_graph_name,bedroom_dim_list,livingroom_xy,
+                            livingroom_lw,entrance_xy) values (
+                            {id},
+                           '{plan_graph_lw}',
+                            {plan_graph_area},
+                            '{plan_graph_name}',
+                            '{bedroom_dim_list}',
+                            '{livingroom_xy}',
+                            '{livingroom_lw}',
+                            '{entrance_xy}');
+    '''
 
-PARAM_XGB_3 = {'algorithm': 'xgb',
-               'algorithm_params': {'learning_rate': 0.01,
-                                    'n_estimators': 50,
-                                    'max_depth': 9,
-                                    'min_child_weight': 2,
-                                    'gamma': 0.9,
-                                    'subsample': 0.8,
-                                    'colsample_bytree': 0.8,
-                                    'objective': 'reg:squarederror'}}
+select_floor_graph_dim_sql = '''
+select * from plan_graph_dim;
+'''

@@ -36,6 +36,10 @@ class Config:
         dbname = self.conf.get("data_warehouse", "PG_DBNAME")
         return dbname
 
+    @property
+    def PSQL_URI(self):
+        psql_uri = self.conf.get("data_warehouse", "PSQL_URI")
+        return psql_uri
+
 
 config = Config()
-print(config.PG_PORT)

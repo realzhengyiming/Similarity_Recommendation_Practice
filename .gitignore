@@ -10,7 +10,7 @@ config.ini
 #
 *.pkl
 
-# Distribution / packaging
+# Distribution / packaging yqqlm,gs1cl!
 .Python
 build/
 develop-eggs/

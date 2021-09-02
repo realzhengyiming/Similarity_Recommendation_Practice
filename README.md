@@ -12,10 +12,23 @@
 
 ```docker run -p 5000:5000 ml_template:test```
 
-训练模型
+预测模型
 
 浏览器访问 http://127.0.0.1:5000/train
 
 预测
 
 浏览器访问 http://127.0.0.1:5000/inference
+
+
+TIP:
+项目内创建config.ini
+```
+[data_warehouse]
+PG_HOST=xxxxx
+PG_USER=xxx
+PG_PASSWORD=xx
+PG_DBNAME=xxx
+PG_PORT=5435
+PSQL_URI = postgresql://username:password@host:port/dbname
+```
