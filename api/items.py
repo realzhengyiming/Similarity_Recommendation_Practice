@@ -1,6 +1,7 @@
 from typing import List
 
 from pydantic import BaseModel
+from shapely.geometry import Polygon
 
 
 class PlanDataClass(BaseModel):
@@ -18,9 +19,20 @@ class FeatureWight(BaseModel):
     livingroom_xy_weight: int  # 当成默认的配置值
     livingroom_lw_weight: int
     bedroom_xy_weight: int
-    bedroom_wl_weight: int
-    plan_graph_wl_weight: int
+    bedroom_lw_weight: int
+    plan_lw_weight: int
     entrance_xy_weight: int
+
+
+class PlanDataJson(BaseModel):
+    id: int
+    wkt: str
+    main_entrance_wkt: str
+    rooms: List
+
+class PlanJsonAndWeight(BaseModel):
+    plan_json: PlanDataJson
+    feature_weight: FeatureWight
 
 
 class PlanDataAndWeight(BaseModel):

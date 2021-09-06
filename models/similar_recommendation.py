@@ -6,7 +6,7 @@ import pandas as pd
 
 from util.db import data_session_instance
 from constant import select_floor_graph_dim_sql
-from util.process_dataclass import FloorPlanGraph
+from util.dataclasses import PlanGraphDim
 
 
 class SimilarRecommendation:
@@ -16,14 +16,14 @@ class SimilarRecommendation:
         weight = self.max_weight + 1 - n
         return weight
 
-    def iter_get_min_score(self, target_plan: FloorPlanGraph, limit_number=30):  # 这个新的匹配是，去掉了分数相同的东西的
+    def iter_get_min_score(self, target_plan: PlanGraphDim, limit_number=30):  # 这个新的匹配是，去掉了分数相同的东西的
         now = time.time()
         scores_and_id = []
         with data_session_instance.get_engine().connect().execution_options(stream_results=True) as conn:
             for chunk_dataframe in pd.read_sql(select_floor_graph_dim_sql, conn, chunksize=100):
                 for index, row in chunk_dataframe.iterrows():  # 每次对这个进行处理
                     data = dict(row)
-                    floor_plan_graph = FloorPlanGraph()
+                    floor_plan_graph = PlanGraphDim()
                     floor_plan_graph.parse_from_dict(data)
                     score_dict = self._get_plan_similar_scores(target_plan, floor_plan_graph)  # todo 这里面也需要就进行瘦身
                     score = score_dict['total_score']

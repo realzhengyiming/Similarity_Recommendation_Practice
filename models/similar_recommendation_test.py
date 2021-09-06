@@ -1,7 +1,7 @@
 import time
 import unittest
 
-from util.process_dataclass import FloorPlanGraph
+from util.dataclasses import PlanGraphDim
 from models.similar_recommendation import SimilarRecommendation
 
 
@@ -35,7 +35,7 @@ class TestBuildingTile(unittest.TestCase):
                 'entrance_xy': [4975, -4277]}
 
         a = SimilarRecommendation(**weights)
-        target_plan = FloorPlanGraph()
+        target_plan = PlanGraphDim()
         target_plan.parse_from_dict(data)
 
         result = a.iter_get_min_score(target_plan)  # 查询出score， id ，然后再拼接起来就好了呀。

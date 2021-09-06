@@ -47,7 +47,7 @@ class OutputRoomType(Enum):
         return None
 
 
-living_room_enum_type = {
+LIVING_ROOM_ENUM_TYPES = {
     OutputRoomType.LIVING_ROOM.value,
     OutputRoomType.DINING_ROOM.value,
     OutputRoomType.DINING_LIVING_ROOM.value,
@@ -58,7 +58,7 @@ living_room_enum_type = {
     OutputRoomType.ENTRANCE_GARDEN.value
 }
 
-bedroom_enums_type = {
+BEDROOM_ENUMS_TYPE = {
     OutputRoomType.BEDROOM.value,
     OutputRoomType.MASTER_BEDROOM.value,
     OutputRoomType.SECONDARY_BEDROOM.value
