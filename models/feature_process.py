@@ -7,7 +7,8 @@ from shapely import wkt
 from shapely.geometry import LineString, Polygon
 from shapely.ops import linemerge
 
-from constant import insert_floor_graph_dim_sql, select_file_content_sql, insert_new_plan_graph_dim_sql
+from constant import insert_floor_graph_dim_sql, select_file_content_sql, insert_new_plan_graph_dim_sql, \
+    create_necessary_table_sql
 from util.dataclasses import FeatureDictKeyError, PlanGraphDim, BedroomDim, PlanGraphWkt, \
     RemoteComputePlanGraphDim
 from util.db import data_session_instance
@@ -29,7 +30,6 @@ class FeatureProcess:
         self.living_room_geom_list = []
         self.bedroom_geom_list = []
         self.other_geom_list = []
-        print(f"提取前房间的数量 {len(plan['rooms'])}")
         for room in plan['rooms']:
             wall_geom_list = []
             for wall_id in room['wall_id_list']:
@@ -53,7 +53,6 @@ class FeatureProcess:
 
     def _set_import_room(self):
         total_room_geom_list = self.living_room_geom_list + self.bedroom_geom_list + self.other_geom_list
-        print(f"提取后房间的数量 {len(total_room_geom_list)}")
         self.plan_wkt = safe_union_polygon_list(total_room_geom_list)
         self.living_room_wkt = safe_union_polygon_list(self.living_room_geom_list)
         self.total_room_geom_list = total_room_geom_list
@@ -88,7 +87,7 @@ class FeatureProcess:
         need_keys = {'doors', "nodes", "rooms", "walls"}
         key_union = set(self.one_project.get("layout_unit").keys()) & need_keys
         if key_union != need_keys:
-            raise FeatureDictKeyError("dict don't have the necessary keys")
+            raise FeatureDictKeyError(f"dict don't have the necessary keys. now just have{key_union} need {need_keys}")
 
         self._extract_rooms_geom()
         self._extract_main_enterance_geom()
@@ -109,7 +108,6 @@ class FeatureProcess:
         intermendiate_process.other_rooms = self.other_geom_list
         intermendiate_process.total_rooms = self.other_geom_list + self.living_room_geom_list + self.bedroom_geom_list
 
-        print(intermendiate_process)
         self.intermendiate_process = intermendiate_process
 
     def _fill_plan_graph_obj(self, plan_graph: PlanGraphDim) -> PlanGraphDim:
@@ -210,11 +208,10 @@ def insert_into_train_data_table(row_data):  # TODO (zym 20210902)这部分应�
         entrance_xy=json.dumps(data['entrance_xy'])
     )
     with data_session_instance.get_engine().connect() as conn:
-        print(sql)
         conn.execute(sql)
 
 
-def main():  # todo 把表的数据写入到redis中
+def main():
     with data_session_instance.get_engine().connect().execution_options(stream_results=True) as conn:
         for chunk_dataframe in pd.read_sql(select_file_content_sql, conn, chunksize=100):
             for index, row in chunk_dataframe.iterrows():  # 每次对这个进行处理
@@ -223,82 +220,63 @@ def main():  # todo 把表的数据写入到redis中
     print("done!")
 
 
+# --- new dim table use this operate
 def insert_into_new_dim(sql):
     with data_session_instance.get_engine().connect() as write_conn:
         write_conn.execute(sql)
+
+
+def start_new_process():
+    with data_session_instance.get_engine().connect().execution_options(
+            stream_results=True) as conn:  # 这个主要是根据结果用来做可视化的
+
+        # 再创建一个连接，专门用来写入的
+        init_table = False
+        for chunk_dataframe in pd.read_sql(select_file_content_sql, conn, chunksize=100):
+            for index, row in chunk_dataframe.iterrows():  # 每次对这个进行处理
+                data = dict(row)
+
+                try:
+                    one_project = data.get("content")
+                    need_keys = {'doors', "nodes", "rooms", "walls"}
+                    key_union = set(one_project.get("layout_unit").keys()) & need_keys
+                    if key_union != need_keys:
+                        raise FeatureDictKeyError(
+                            f"dict don't have the necessary keys. now just have{key_union} need {need_keys}")
+                except Exception:
+                    continue
+                feature = FeatureProcess()
+                try:
+                    result = feature.parse_to_remote_compute_plan_graph(data)
+                    dict_data = asdict(result)
+                    sql = insert_new_plan_graph_dim_sql.format(
+                        id=dict_data['id'],
+                        plan_area=dict_data['plan_area'],
+                        plan_name=dict_data['plan_name'],
+                        plan_l=dict_data['plan_l'],
+                        plan_w=dict_data['plan_w'],
+                        bedroom_l=dict_data['bedroom_l'],
+                        bedroom_w=dict_data['bedroom_w'],
+                        bedroom_x=dict_data['bedroom_x'],
+                        bedroom_y=dict_data['bedroom_y'],
+                        livingroom_l=dict_data['livingroom_l'],
+                        livingroom_w=dict_data['livingroom_w'],
+                        livingroom_x=dict_data['livingroom_x'],
+                        livingroom_y=dict_data['livingroom_y'],
+                        entrance_x=dict_data['entrance_x'],
+                        entrance_y=dict_data['entrance_y']
+                    )
+                    if not init_table:
+                        insert_into_new_dim(create_necessary_table_sql)
+                        init_table = True
+                    print(sql)
+                    insert_into_new_dim(sql)
+                except FeatureDictKeyError:
+                    print("跳过这个，缺少字段的")
 
 
 if __name__ == '__main__':
     # main()  # 这个是处理中间值的
     # 这儿有22827条数据
 
-    # select_file_content_sql = '''
-    # SELECT * FROM file_content where file_type='RESIDENTIAL_UNIT' limit 100;
-    # '''
-    #
-    #
-    # with data_session_instance.get_engine().connect().execution_options(
-    #         stream_results=True) as conn:  # 这个主要是根据结果用来做可视化的
-    #     for chunk_dataframe in pd.read_sql(select_file_content_sql, conn, chunksize=100):
-    #         for index, row in chunk_dataframe.sample(1).iterrows():  # 每次对这个进行处理
-    #             data = dict(row)
-    #             # feature = FeatureProcess()
-    #             # result = feature.parse_to_plan_graph(data)
-    #             # print(result)
-    #             insert_into_train_data_table(data)  # 里面已经处理好了
-    #
-    # # 另一个从json 读取的话
-    # data = {"id": 24567,
-    #         "wkt": "POLYGON ((2200 -3950, -500 -3950, -1550 -3950, -6250 -3950, -6250 -3400, -7100 -3400, -7100 -1850, -6250 -1850, -6250 -800, -6250 50, -7100 50, -7100 2150, -6250 2150, -6250 3200, 50 3200, 50 5300, 2200 5300, 5550 5300, 5550 1850, 5550 -800, 5550 -3950, 2200 -3950))",
-    #         "main_entrance_wkt": "LINESTRING (750 5300, 1650 5300)", "rooms": [{"id": 2291230,
-    #                                                                             "wkt": "POLYGON ((-6250 -3950, -6250 -3400, -7100 -3400, -7100 -1850, -6250 -1850, -6250 -800, -1550 -800, -1550 -3950, -6250 -3950))",
-    #                                                                             "type": 2}, {"id": 2291229,
-    #                                                                                          "wkt": "POLYGON ((2200 -2050, -500 -2050, -500 -3950, -1550 -3950, -1550 -800, -6250 -800, -6250 50, -7100 50, -7100 2150, -6250 2150, -6250 3200, 50 3200, 50 5300, 2200 5300, 2200 1850, 3250 1850, 3250 -800, 2200 -800, 2200 -2050))",
-    #                                                                                          "type": 4}, {"id": 2291228,
-    #                                                                                                       "wkt": "POLYGON ((2200 -2050, 2200 -3950, -500 -3950, -500 -2050, 2200 -2050))",
-    #                                                                                                       "type": 10},
-    #                                                                            {"id": 2291227,
-    #                                                                             "wkt": "POLYGON ((2200 -3950, 2200 -2050, 2200 -800, 3250 -800, 5550 -800, 5550 -3950, 2200 -3950))",
-    #                                                                             "type": 3}, {"id": 2291226,
-    #                                                                                          "wkt": "POLYGON ((2200 5300, 5550 5300, 5550 1850, 3250 1850, 2200 1850, 2200 5300))",
-    #                                                                                          "type": 3}, {"id": 2291225,
-    #                                                                                                       "wkt": "POLYGON ((5550 -800, 3250 -800, 3250 1850, 5550 1850, 5550 -800))",
-    #                                                                                                       "type": 7}]}
-    # new = FeatureProcess()
-    # result = new._parse_plan_graph_wkt_by_json(data)
-    # result = new.parse_to_plan_by_json(data)
-    # print(result)
-
-    sql = insert_new_plan_graph_dim_sql
-    with data_session_instance.get_engine().connect().execution_options(
-            stream_results=True) as conn:  # 这个主要是根据结果用来做可视化的
-
-        # 再创建一个连接，专门用来写入的
-
-        for chunk_dataframe in pd.read_sql(select_file_content_sql, conn, chunksize=100):
-            for index, row in chunk_dataframe.iterrows():  # 每次对这个进行处理
-                data = dict(row)
-                feature = FeatureProcess()
-                result = feature.parse_to_remote_compute_plan_graph(data)
-
-                dict_data = asdict(result)
-                sql = insert_new_plan_graph_dim_sql.format(
-                    id=dict_data['id'],
-                    plan_area=dict_data['plan_area'],
-                    plan_name=dict_data['plan_name'],
-                    plan_l=dict_data['plan_l'],
-                    plan_w=dict_data['plan_w'],
-                    bedroom_l=dict_data['bedroom_l'],
-                    bedroom_w=dict_data['bedroom_w'],
-                    bedroom_x=dict_data['bedroom_x'],
-                    bedroom_y=dict_data['bedroom_y'],
-                    livingroom_l=dict_data['livingroom_l'],
-                    livingroom_w=dict_data['livingroom_w'],
-                    livingroom_x=dict_data['livingroom_x'],
-                    livingroom_y=dict_data['livingroom_y'],
-                    entrance_x=dict_data['entrance_x'],
-                    entrance_y=dict_data['entrance_y']
-                )
-                # print(sql)
-
-                insert_into_new_dim(sql)
+    start_new_process()  # 这个是对应新的维度表的处理

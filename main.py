@@ -17,7 +17,7 @@ async def home():
 #     return {"floor_graph": result}
 
 
-@app.post("/final_recommendation")
+@app.post("/plan_graph_recommendation")
 def final_recommendation(plan_json_and_weight: PlanJsonAndWeight):
     print(plan_json_and_weight)
     result = latest_train_and_predict(plan_json_and_weight.dict())

@@ -3,7 +3,7 @@ CONFIG_PATH = "config.ini"
 # sql
 select_file_content_sql = '''
 select * from file_content where file_type='RESIDENTIAL_UNIT'
-                             and id in (select distinct id from file 
+                             and file_id in (select distinct id from file 
                             where file_type='RESIDENTIAL_UNIT'
                               and folder_id = 1);
 '''
@@ -11,17 +11,6 @@ select * from file_content where file_type='RESIDENTIAL_UNIT'
 create_necessary_table_sql = '''
 create extension if not exists postgis;
 create table if not exists plan_graph_dim(
-    id int,
-    plan_graph_area float,
-    plan_graph_name text,
-    plan_graph_lw jsonb,
-    bedroom_dim_list jsonb,
-    livingroom_xy jsonb,
-    livingroom_lw jsonb,
-    entrance_xy jsonb
-);
-
-create table if not exists new_plan_dim(
     id int,
     plan_area float,
     plan_name text,
@@ -56,7 +45,7 @@ insert_floor_graph_dim_sql = '''
     '''
 
 insert_new_plan_graph_dim_sql = '''
-insert into new_plan_dim (
+insert into plan_graph_dim (
     id ,plan_area ,plan_name ,plan_l ,plan_w  ,bedroom_l  ,bedroom_w  ,bedroom_x  ,bedroom_y ,livingroom_l  ,livingroom_w  ,livingroom_x  ,livingroom_y  ,entrance_x  ,
     entrance_y  ) values ({id} ,{plan_area} ,'{plan_name}' ,{plan_l} ,{plan_w}  ,{bedroom_l}  ,{bedroom_w}  ,{bedroom_x}  ,{bedroom_y} ,{livingroom_l}  ,{livingroom_w}  ,
     {livingroom_x}  ,{livingroom_y}  ,{entrance_x}  ,{entrance_y}  );
@@ -72,7 +61,7 @@ select  id ,
         (abs(livingroom_l - 100) + abs(livingroom_w - 100) ) * 1 as livingroom_lw,
         (abs(livingroom_x - 100) + abs(livingroom_y - 100) ) * 1 as livingroom_xy,
         (abs(entrance_x - 100) + abs(entrance_y - 100) ) * 1 as entrance_xy_score 
-        from new_plan_dim;
+        from plan_graph_dim;
 '''
 
 select_floor_graph_dim_sql = '''
@@ -97,7 +86,7 @@ select id,plan_lw_score,bedroom_xy_score,bedroom_lw_score,livingroom_lw_score,li
         (abs(livingroom_l - {livingroom_l}) + abs(livingroom_w - {livingroom_w}) ) * {livingroom_lw_weight} as livingroom_lw_score,
         (abs(livingroom_x - {livingroom_x}) + abs(livingroom_y - {livingroom_y}) ) * {livingroom_xy_weight} as livingroom_xy_score,
         (abs(entrance_x - {entrance_x}) + abs(entrance_y - {entrance_y}) ) * {entrance_xy_weight} as entrance_xy_score
-        from new_plan_dim 
+        from plan_graph_dim 
         -- limit 2
         ) as t 
         )t2 where total_score>0 group by total_score,id,plan_lw_score,bedroom_xy_score,bedroom_lw_score,livingroom_lw_score,
