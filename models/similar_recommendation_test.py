@@ -2,7 +2,7 @@ import time
 import unittest
 
 from util.dataclasses import PlanGraphDim
-from models.similar_recommendation import SimilarRecommendation
+from models.similar_recommendation_local_compute import SimilarRecommendation
 
 
 class TestBuildingTile(unittest.TestCase):

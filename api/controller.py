@@ -1,5 +1,5 @@
 # 主要逻辑区域
-from models.similar_recommendation import SimilarRecommendation
+from models.similar_recommendation_local_compute import SimilarRecommendation
 from models.similar_recommendation_remote_compute import SimilarRecommendation as NewRecommendation
 from util.dataclasses import PlanGraphDim
 from util.utils import random_get_one_home_train_data

@@ -1,4 +1,5 @@
 import json
+import time
 from dataclasses import asdict
 from typing import Dict
 
@@ -221,9 +222,12 @@ def main():
 
 
 # --- new dim table use this operate
-def insert_into_new_dim(sql):
+def insert_into_new_dim(sql):  # 这个是每次都创建连接的意思吗，好像是，难怪那么慢？,可以添加多行以后再执行插入
     with data_session_instance.get_engine().connect() as write_conn:
         write_conn.execute(sql)
+
+
+failed_id_list = []
 
 
 def start_new_process():
@@ -231,7 +235,7 @@ def start_new_process():
             stream_results=True) as conn:  # 这个主要是根据结果用来做可视化的
 
         # 再创建一个连接，专门用来写入的
-        init_table = False
+        row_lists = [create_necessary_table_sql]  # 默认自带建表语句
         for chunk_dataframe in pd.read_sql(select_file_content_sql, conn, chunksize=100):
             for index, row in chunk_dataframe.iterrows():  # 每次对这个进行处理
                 data = dict(row)
@@ -266,17 +270,28 @@ def start_new_process():
                         entrance_x=dict_data['entrance_x'],
                         entrance_y=dict_data['entrance_y']
                     )
-                    if not init_table:
-                        insert_into_new_dim(create_necessary_table_sql)
-                        init_table = True
-                    print(sql)
-                    insert_into_new_dim(sql)
+
+                    # 判断和插入数据
+                    row_lists.append(sql)
+                    if len(row_lists) >= 100:
+                        print(row_lists)
+                        insert_into_new_dim(" ".join(row_lists))
+                        row_lists = []
                 except FeatureDictKeyError:
                     print("跳过这个，缺少字段的")
+                except Exception as e:
+                    print(e)  # 如果是失败的
+                    failed_id_list.append(dict_data['id'])  # 错误的记录下来
+
+        if len(row_lists) != 0:
+            insert_into_new_dim(" ".join(row_lists))
+    print(len(failed_id_list))
+    print(failed_id_list)
 
 
 if __name__ == '__main__':
     # main()  # 这个是处理中间值的
     # 这儿有22827条数据
-
+    now = time.time()
     start_new_process()  # 这个是对应新的维度表的处理
+    print(f"total_spend_time {time.time()-now}")
