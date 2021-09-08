@@ -11,14 +11,9 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt -i "https://pypi.tuna.tsinghua.edu.cn/simple"
 
 # copy the content of the local src directory to the working directory
-COPY src/ /src/
-RUN mkdir /models/
-COPY app.py /
-COPY config.py /
-COPY constant.py /
-COPY config.ini /
+COPY . /
 
 EXPOSE 5000
 
 ## command to run on container start
-CMD ["python", "app.py"]
+CMD ["uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "5000"]

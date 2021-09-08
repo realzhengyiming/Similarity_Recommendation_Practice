@@ -38,7 +38,13 @@ class Config:
 
     @property
     def PSQL_URI(self):
-        psql_uri = self.conf.get("data_warehouse", "PSQL_URI")
+        host = self.conf.get("data_warehouse", "PG_HOST")
+        port = self.conf.get("data_warehouse", "PG_PORT")
+        user = self.conf.get("data_warehouse", "PG_USER")
+        password = self.conf.get("data_warehouse", "PG_PASSWORD")
+        dbname = self.conf.get("data_warehouse", "PG_DBNAME")
+
+        psql_uri = f'postgresql://{user}:{password}@{host}:{port}/{dbname}'
         return psql_uri
 
 
