@@ -66,7 +66,7 @@ class FeatureProcess:
                 door_wkt = LineString(door_node)
                 self.main_entrance_wkt = door_wkt
 
-    def _parse_plan_graph_wkt_by_json(self, json_data: Dict):
+    def _parse_plan_graph_wkt_by_json(self, json_data: Dict):  # 解析传入的json用的
         intermendiate_process = PlanGraphWkt()
 
         intermendiate_process.id = json_data.get("id")  # 传过来的是用来做匹配的，所以对它的id不感冒
@@ -77,6 +77,8 @@ class FeatureProcess:
                                           i['type'] in BEDROOM_ENUMS_TYPE]  # 这边也是存储需要计算的类型，那就只有bedroom polygon
         livingroom_list = [wkt.loads(i['wkt']) for i in json_data.get("rooms") if
                            i['type'] in LIVING_ROOM_ENUM_TYPES]
+        if not intermendiate_process.main_entrance_wkt:
+            raise LackOfRoomTypeError("The json lack of entrance_wkt")
 
         if not livingroom_list:
             raise LackOfRoomTypeError("The json lack of livingroom type wtk")
@@ -100,7 +102,7 @@ class FeatureProcess:
         self._extract_main_enterance_geom()
         self._set_import_room()
 
-    def _parse_intermediate_polygon(self, query_result_row: Dict):
+    def _parse_intermediate_polygon(self, query_result_row: Dict):  # 预处理时候用的
         self._extranct_all_import_elements(query_result_row)
 
         # 获得对应的中间表的 polygon 用于可视化
