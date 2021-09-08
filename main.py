@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 
-from api.controller import random_predict, train_and_predict, latest_train_and_predict
-from api.items import PlanDataAndWeight, FeatureWight, PlanJsonAndWeight
+from api.controller import latest_train_and_predict
+from api.items import PlanJsonAndWeight
+from util.dataclasses import LackOfRoomTypeError, FeatureDictKeyError
 
 app = FastAPI()
 
@@ -20,9 +21,14 @@ async def home():
 @app.post("/plan_graph_recommendation")
 def final_recommendation(plan_json_and_weight: PlanJsonAndWeight):
     print(plan_json_and_weight)
-    result = latest_train_and_predict(plan_json_and_weight.dict())
-    return {"result_list": result}
+    try:
+        result = latest_train_and_predict(plan_json_and_weight.dict())
+    except LackOfRoomTypeError as e:
+        return {"result_list": [], "error": e}
+    except FeatureDictKeyError as e:
+        return {"result_list": [], "error": e}
 
+    return {"result_list": result}
 
 # @app.post("/test_recommendation")
 # async def test_random_recommendation(featurewight: FeatureWight):

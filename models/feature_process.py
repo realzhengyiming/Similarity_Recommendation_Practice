@@ -11,7 +11,7 @@ from shapely.ops import linemerge
 from constant import insert_floor_graph_dim_sql, select_file_content_sql, insert_new_plan_graph_dim_sql, \
     create_necessary_table_sql
 from util.dataclasses import FeatureDictKeyError, PlanGraphDim, BedroomDim, PlanGraphWkt, \
-    RemoteComputePlanGraphDim
+    RemoteComputePlanGraphDim, LackOfRoomTypeError
 from util.db import data_session_instance
 from util.enums import LIVING_ROOM_ENUM_TYPES, BEDROOM_ENUMS_TYPE
 from util.utils import safe_union_polygon_list, relative_xy_to_npy
@@ -77,8 +77,14 @@ class FeatureProcess:
                                           i['type'] in BEDROOM_ENUMS_TYPE]  # 这边也是存储需要计算的类型，那就只有bedroom polygon
         livingroom_list = [wkt.loads(i['wkt']) for i in json_data.get("rooms") if
                            i['type'] in LIVING_ROOM_ENUM_TYPES]
-        intermendiate_process.livingroom_wkt = safe_union_polygon_list(livingroom_list)
 
+        if not livingroom_list:
+            raise LackOfRoomTypeError("The json lack of livingroom type wtk")
+
+        if not intermendiate_process.bedrooms:
+            raise LackOfRoomTypeError("The json lack of bedroom type wtk")
+
+        intermendiate_process.livingroom_wkt = safe_union_polygon_list(livingroom_list)
         self.intermendiate_process = intermendiate_process  # 之后再统一由这个中间对象转成graph
 
     def _extranct_all_import_elements(self, query_result_row):

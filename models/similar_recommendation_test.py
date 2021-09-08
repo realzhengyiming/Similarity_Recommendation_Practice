@@ -10,7 +10,7 @@ class TestBuildingTile(unittest.TestCase):
     def test_similar_recommendation(self):
         now = time.time()
         weights = {
-            'livingroom_xy_weight': 5,  # 当成默认的配置值
+            'livingroom_xy_weight': 5,  # 当成默认的配置值 1～10的取值范围
             'livingroom_lw_weight': 5,
             'bedroom_xy_weight': 5,
             'bedroom_wl_weight': 5,

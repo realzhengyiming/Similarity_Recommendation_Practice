@@ -51,17 +51,24 @@ LIVING_ROOM_ENUM_TYPES = {
     OutputRoomType.LIVING_ROOM.value,
     OutputRoomType.DINING_ROOM.value,
     OutputRoomType.DINING_LIVING_ROOM.value,
-    OutputRoomType.PASSAGE.value,
-    OutputRoomType.HALLWAY.value,
 
-    OutputRoomType.PUBLIC_AREA.value,
-    OutputRoomType.ENTRANCE_GARDEN.value
+    # OutputRoomType.PASSAGE.value,  # 这个是思和之前处理的思路
+    # OutputRoomType.HALLWAY.value,
+    # OutputRoomType.PUBLIC_AREA.value,
+    # OutputRoomType.ENTRANCE_GARDEN.value
 }
 
 BEDROOM_ENUMS_TYPE = {
     OutputRoomType.BEDROOM.value,
     OutputRoomType.MASTER_BEDROOM.value,
-    OutputRoomType.SECONDARY_BEDROOM.value
+    OutputRoomType.SECONDARY_BEDROOM.value,
+
+    # 根据单体那边的核对
+    OutputRoomType.SENIOR_ROOM,
+    OutputRoomType.CHILDREN_ROOM,
+    OutputRoomType.NANNY_ROOM,
+    OutputRoomType.STUDIO,
+    OutputRoomType.PARTY_ROOM
 }
 
 if __name__ == '__main__':

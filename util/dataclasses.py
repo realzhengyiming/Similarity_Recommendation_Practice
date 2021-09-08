@@ -50,6 +50,7 @@ class PlanGraphWkt:
     other_rooms: List = None  # 这儿是放所有房子的，用来做可视化临时用的
     total_rooms: List = None
 
+
 @dataclass
 class PlanGraphDim:  # dataclass 如果不给变量类型会失败，写入数据库和读取数据库的东西都用这个来装
     '''
@@ -131,11 +132,21 @@ class FeatureWeight:
     entrance_xy_weight: float = 5.0
 
 
-# 这个是error
+# 这个是error的类
 class FeatureDictKeyError(Exception):
     def __init__(self, error_info):
         super().__init__(self)  # 初始化父类
-        self.error_info = error_info
+        self.error_info = "lack of feature error" if not error_info else error_info
+
+    def __str__(self):
+        return self.error_info
+
+
+# 缺少element 错误
+class LackOfRoomTypeError(Exception):
+    def __init__(self, error_info):
+        super().__init__(self)  # 初始化父类
+        self.error_info = "lack of room type error" if not error_info else error_info
 
     def __str__(self):
         return self.error_info
